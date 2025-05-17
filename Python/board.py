@@ -1,106 +1,128 @@
-# === IMPORTANDO AS FERRAMENTAS ===
+import tkinter as tk
+import customtkinter as ctk
+from PIL import Image, ImageTk
+import random
+from result import show_result
 
-import tkinter as tk  # Biblioteca para criar janelas e botões
-import customtkinter as ctk  # Versão estilizada do tkinter
-from PIL import Image, ImageTk  # Usada para abrir e mostrar imagens
-from cards import create_deck_id as create_cards  # Cria os IDs das cartas
-from cards import create_deck_cards as create_deck  # Cria as imagens embaralhadas das cartas
+cards = []
 
+def verify_card(result):
+    while result in cards:
+        result = random.randint(1, 52)
+    return result
 
-# === CONFIGURAÇÃO DA JANELA PRINCIPAL ===
+def create_deck_id():
+    for _ in range(24):
+        result = verify_card(random.randint(1, 52))
+        cards.append(result)
+    return cards
 
-window = ctk.CTk()  # Criamos a janela
-window.geometry("1600x900")  # Tamanho da janela
-window.title("Memory Game")  # Título da janela
-window.resizable(False, False)  # Não deixa redimensionar
-ctk.set_appearance_mode("dark")  # Modo escuro
+def create_deck_cards(cards):
+    deck = []
+    for card_id in cards:
+        img = Image.open(f"imagens/cards/{card_id}.png")
+        img = ImageTk.PhotoImage(img)
+        deck.append(img)
+        deck.append(img)
+    random.shuffle(deck)
+    return deck
 
+def start_board(player1, player2):
+    window = ctk.CTk()
+    window.geometry("1920x1080")
+    window.title("Memory Game")
+    window.resizable(True, True)
 
-# === CRIANDO O BARALHO ===
+    card_ids = create_deck_id()
+    deck = create_deck_cards(card_ids)
 
-card = create_cards()  # Gera os pares
-cards = create_deck(card)  # Embaralha e pega as imagens
+    frame_top = ctk.CTkFrame(window, height=80)
+    frame_top.pack(fill="x")
 
+    current_turn = tk.StringVar(value=f"Vez: {player1}")
+    score1 = tk.IntVar(value=0)
+    score2 = tk.IntVar(value=0)
+    player_turn = [1]
 
-# === CRIANDO O CANVAS (ÁREA DO JOGO) ===
+    label_title = ctk.CTkLabel(frame_top, text="Memory Game", font=("Arial", 24))
+    label_title.pack(side="top", pady=5)
 
-canvas = ctk.CTkCanvas(window, width=1600, height=900)  # Área onde as cartas vão aparecer
-canvas.configure(bg="#363636")  # Cor de fundo
-scrollbar = tk.Scrollbar(window, orient="vertical", command=canvas.yview)  # Scroll
-canvas.configure(yscrollcommand=scrollbar.set)
-scrollbar.pack(side="right", fill="y")
-canvas.pack(side="left", fill="both", expand=True)
+    info_frame = ctk.CTkFrame(frame_top)
+    info_frame.pack(fill="x", pady=5)
 
+    player1_label = ctk.CTkLabel(info_frame, textvariable=tk.StringVar(value=f"{player1} - Pontos:"), font=("Arial", 18))
+    player1_score = ctk.CTkLabel(info_frame, textvariable=score1, font=("Arial", 18))
+    player2_label = ctk.CTkLabel(info_frame, textvariable=tk.StringVar(value=f"{player2} - Pontos:"), font=("Arial", 18))
+    player2_score = ctk.CTkLabel(info_frame, textvariable=score2, font=("Arial", 18))
+    turn_label = ctk.CTkLabel(info_frame, textvariable=current_turn, font=("Arial", 18))
 
-# === IMAGEM DAS CARTAS VIRADAS (COSTAS) ===
+    player1_label.pack(side="left", padx=10)
+    player1_score.pack(side="left")
+    player2_score.pack(side="right", padx=10)
+    player2_label.pack(side="right")
+    turn_label.pack(side="top", pady=5)
 
-img_path = "imagens/cards/back.png"
-img_pil = Image.open(img_path)  # Abre a imagem
-img = ImageTk.PhotoImage(img_pil)  # Prepara para ser usada no canvas
+    scroll_canvas = tk.Canvas(window, bg="#363636", height=820)
+    scrollbar = tk.Scrollbar(window, orient="vertical", command=scroll_canvas.yview)
+    scroll_canvas.configure(yscrollcommand=scrollbar.set)
 
+    scrollbar.pack(side="right", fill="y")
+    scroll_canvas.pack(side="left", fill="both", expand=True)
 
-# === FUNÇÕES DO JOGO ===
+    inner_frame = ctk.CTkFrame(scroll_canvas, fg_color="#363636")
+    scroll_canvas.create_window((0, 0), window=inner_frame, anchor="nw")
 
-# Volta a carta para a imagem virada para baixo
-def hide_card(image_id):
-    canvas.itemconfig(image_id, image=img)
+    def on_configure(event):
+        scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
 
-# Quando o jogador clica em uma carta
-def on_click(event, row, col):
-    print(f"Imagem clicada: linha={row}, coluna={col}")  # Apenas mostra onde clicou para controle de desenvolvimento
-    image_id = image_ids[(row, col)]  # Pega a imagem clicada
-    index = row * 8 + col  # Calcula o índice da carta (0 a 47)
-    canvas.itemconfig(image_id, image=cards[index])  # Mostra a carta verdadeira
-    canvas.after(2000, lambda: hide_card(image_id))  # Espera 2 segundos e vira novamente
+    inner_frame.bind("<Configure>", on_configure)
 
+    back_img = ImageTk.PhotoImage(Image.open("imagens/cards/back.png").resize((128, 128)))
 
-# === TAMANHO DAS CARTAS ===
+    revealed = []
+    image_refs = []
 
-card_width = 128
-card_height = 128
-padding = 10
+    def check_match():
+        if len(revealed) == 2:
+            idx1, id1 = revealed[0]
+            idx2, id2 = revealed[1]
+            if deck[idx1] == deck[idx2]:
+                if player_turn[0] == 1:
+                    score1.set(score1.get() + 1)
+                else:
+                    score2.set(score2.get() + 1)
+            else:
+                scroll_canvas.after(1000, lambda: card_buttons[idx1].configure(image=back_img))
+                scroll_canvas.after(1000, lambda: card_buttons[idx2].configure(image=back_img))
+                player_turn[0] = 2 if player_turn[0] == 1 else 1
+                current_turn.set(f"Vez: {player1 if player_turn[0] == 1 else player2}")
+            revealed.clear()
 
+            if score1.get() + score2.get() == 24:
+                winner = player1 if score1.get() > score2.get() else player2
+                loser = player2 if score1.get() > score2.get() else player1
+                points = score1.get() if score1.get() > score2.get() else score2.get()
+                loser_points = score2.get() if score1.get() > score2.get() else score1.get()
+                window.after(1000, window.destroy())
+                show_result(winner, points, loser, loser_points)
 
-# === VARIÁVEIS DE JOGO ===
+    card_buttons = []
 
-image_ids = {}  # Guardará os IDs das imagens
-player1points = 0
-player2points = 0
+    for idx in range(48):
+        row, col = divmod(idx, 8)
+        card_button = tk.Label(inner_frame, image=back_img, bg="#363636")
+        card_button.grid(row=row, column=col, padx=10, pady=10)
+        image_refs.append(deck[idx])
 
-# === TÍTULOS E PONTUAÇÃO ===
-# aqui, labels são criadas para mostrar o título do jogo e os pontos dos jogadores
-label = ctk.CTkLabel(canvas, text="Memory Game", font=("Arial", 24), text_color="white")
-label.place(x=700, y=10)
+        def make_click(i):
+            def click(event):
+                if len(revealed) < 2 and card_buttons[i]['image'] == str(back_img):
+                    card_buttons[i].configure(image=deck[i])
+                    revealed.append((i, id(card_buttons[i])))
+                    scroll_canvas.after(500, check_match)
+            return click
 
-player1_label = ctk.CTkLabel(canvas, text=f"Player 1 \n pontos:{player1points}", font=("Arial", 18), text_color="white")
-player1_label.place(x=100, y=10)
+        card_button.bind("<Button-1>", make_click(idx))
+        card_buttons.append(card_button)
 
-player2_label = ctk.CTkLabel(canvas, text=f"Player 2 \n pontos:{player2points}", font=("Arial", 18), text_color="white")
-player2_label.place(x=1400, y=10)
-
-
-# === DESENHANDO AS 48 CARTAS ===
-
-for idx in range(48):
-    row = idx // 8  # Linha (0 a 5)
-    col = idx % 8   # Coluna (0 a 7)
-    x = 210 + col * (card_width + padding)  # Posição X
-    y = 50 + row * (card_height + padding)  # Posição Y
-
-    tag = f"card_{row}_{col}"  # Nome da carta
-    image_id = canvas.create_image(x, y, image=img, anchor="nw", tags=(tag))  # Coloca a carta virada
-    image_ids[(row, col)] = image_id  # Salva o ID dessa carta
-    # Diz o que acontece quando clicamos nela, chamando a função on_click
-    canvas.tag_bind(tag, "<Button-1>", lambda event, row=row, col=col: on_click(event, row, col))
-
-
-# Atualiza a rolagem se o tamanho da tela mudar
-def on_configure(event):
-    canvas.configure(scrollregion=canvas.bbox("all"))
-
-# Faz o canvas rolar quando a tela mudar(caso o canvas atualize, o
-# bind ativa e executa a função on_configure, caso o tamanho do canvas ultrapasse o da tela)
-canvas.bind("<Configure>", on_configure)
-
-# === INICIA O JOGO ===
-window.mainloop()
+    window.mainloop()
