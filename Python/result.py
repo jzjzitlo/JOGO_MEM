@@ -25,3 +25,4 @@ def show_result(winner, points, loser, loser_points):
     button.pack(pady=30)
 
     window.mainloop()
+

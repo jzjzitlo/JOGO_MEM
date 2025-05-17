@@ -103,8 +103,7 @@ def start_board(player1, player2):
                 loser = player2 if score1.get() > score2.get() else player1
                 points = score1.get() if score1.get() > score2.get() else score2.get()
                 loser_points = score2.get() if score1.get() > score2.get() else score1.get()
-                window.after(1000, window.destroy())
-                show_result(winner, points, loser, loser_points)
+                window.after(600,show_result(winner, points, loser, loser_points))
 
     card_buttons = []
 
