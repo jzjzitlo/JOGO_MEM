@@ -133,8 +133,10 @@ def start_board(player1, player2):
             else:
                 # Se as cartas forem diferentes:
                 # Aguarda 1 segundo e vira as cartas de volta (recoloca imagem de trás)
-                after_ids.append(scroll_canvas.after(700, lambda: card_buttons[idx1].configure(image=back_img)))
-                after_ids.append(scroll_canvas.after(700, lambda: card_buttons[idx2].configure(image=back_img)))
+                #  (OBS: na documentacao fornecida, o tempo sugerido é de 2s, mas para melhor dinamica, 1s foi utilizado. 
+                # caso necessite de ser 2s, apenas altere o primeiro campo de after(), mudando o 1000 para 2000)
+                after_ids.append(scroll_canvas.after(1000, lambda: card_buttons[idx1].configure(image=back_img)))
+                after_ids.append(scroll_canvas.after(1000, lambda: card_buttons[idx2].configure(image=back_img)))
                 
                 # Alterna o jogador da vez
                 player_turn[0] = 2 if player_turn[0] == 1 else 1
@@ -178,7 +180,7 @@ def start_board(player1, player2):
                     revealed.append((i, id(card_buttons[i])))  # Salva info da carta revelada
                     if not checking[0]:  # Só agenda se nenhuma verificação estiver pendente
                         checking[0] = True
-                        after_ids.append(scroll_canvas.after(700, check_match))# Chama verificação após 0.7s
+                        after_ids.append(scroll_canvas.after(500, check_match))# Chama verificação após 0.5s
                         
             return click
 
