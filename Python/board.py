@@ -126,7 +126,7 @@ def start_board(player1, player2):
             if deck[idx1] == deck[idx2]:
                 # Se for a vez do jogador 1, adiciona 1 ponto a ele
                 if player_turn[0] == 1:
-                    score1.set(score1.get() + 24)
+                    score1.set(score1.get() + 1)
                 else:
                     # Se for a vez do jogador 2, adiciona 1 ponto a ele
                     score2.set(score2.get() + 1)
