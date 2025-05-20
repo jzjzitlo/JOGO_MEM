@@ -107,7 +107,7 @@ def start_board(player1, player2):
     image_refs = []  # Referências para manter imagens em memória
 
     # Função que verifica se duas cartas abertas são um par
-    checking = [False] #flag para gerenciar o numero de verificacoes
+    checking = [False] #flag para gerenciar o numero de verificacoes, garantindo que apenas uma verificação ocorra por vez
     def check_match():
         checking [0] = False #define a flag como falsa, para evitar simultaneas verificacoes.
 
