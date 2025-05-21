@@ -1,3 +1,13 @@
+"""
+Memory Game - Jogo da Memória
+
+@author ANA LUISA RODRIGUES DINIZ
+@author ARTHUR EXPEDITO ARAÚJO FERREIRA
+@author BEATRIZ OLIVEIRA SANTOS
+@author ÍTALO RODRIGUES GONTIJO
+"""
+
+
 # Importa as bibliotecas
 import customtkinter as ctk
 from PIL import Image, ImageTk

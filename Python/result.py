@@ -1,3 +1,13 @@
+"""
+Memory Game - Jogo da Memória
+
+@author ANA LUISA RODRIGUES DINIZ
+@author ARTHUR EXPEDITO ARAÚJO FERREIRA
+@author BEATRIZ OLIVEIRA SANTOS
+@author ÍTALO RODRIGUES GONTIJO
+"""
+
+
 # Importa a biblioteca
 import customtkinter as ctk
 
@@ -52,6 +62,7 @@ def show_result(winner, points, loser, loser_points):
     # Inicia o loop principal da interface gráfica (mantém a janela aberta e responsiva)
     window.mainloop()
 
+# Função que mostra a tela de empate
 def show_draw(player1, player2):
     # Cria uma nova janela usando a biblioteca CustomTkinter
     window = ctk.CTk()
