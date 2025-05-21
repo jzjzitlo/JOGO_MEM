@@ -1,7 +1,7 @@
 # Importa as bibliotecas
 import customtkinter as ctk
 from PIL import Image, ImageTk
-from board import start_board
+from board import create_board
 
 
 def get_names(window, entry1, entry2):# Função para obter os nomes dos jogadores e iniciar o jogo
@@ -11,7 +11,7 @@ def get_names(window, entry1, entry2):# Função para obter os nomes dos jogador
    
     if name1 and name2: # Verifica se ambos os nomes foram preenchidos
         window.destroy()# Fecha a janela atual
-        start_board(name1, name2)# Chama a função que inicia o tabuleiro com os nomes dos jogadores
+        create_board(name1, name2)# Chama a função que inicia o tabuleiro com os nomes dos jogadores
 
 # Função principal que configura a interface gráfica
 def main():

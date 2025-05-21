@@ -1,191 +1,144 @@
-# Importa as bibliotecas
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk
 import random
 from result import show_result
+from result import show_draw
 
-# Lista global que armazenará os IDs das cartas selecionadas para o jogo
-cards = []
-after_ids = []  # Lista para armazenar os IDs das callbacks do after, para cancelar depois
+# Classe que representa uma carta no tabuleiro
+class MemoryCard:
+    def __init__(self, master, front_img, back_img, card_id, click_callback, idx):
+        self.front_img = front_img
+        self.back_img = back_img
+        self.card_id = card_id
+        self.revealed = False
+        self.idx = idx
 
-# Função que garante que um número (ID da carta) não se repita na lista de cartas
-def verify_card(result):
-    # Enquanto o número sorteado já estiver na lista, sorteia outro
-    while result in cards:
-        result = random.randint(1, 52)
-    return result
+        self.label = tk.Label(master, image=back_img, bg="#363636")
+        self.label.image = back_img  # referência fixa
+        self.label.bind("<Button-1>", lambda e: click_callback(self))
 
-# Cria uma lista com 24 cartas únicas (ID entre 1 e 52)
-def create_deck_id():
-    cards.clear()  # Lista para armazenar os IDs das cartas
-    for _ in range(24):
-        result = verify_card(random.randint(1, 52))
-        cards.append(result)
-    return cards
+    def show(self):
+        self.label.configure(image=self.front_img)
+        self.label.image = self.front_img  # fixa frente
 
-# Cria o baralho duplicando cada imagem (pares) e embaralha a lista
-def create_deck_cards(cards):
+    def hide(self):
+        self.label.configure(image=self.back_img)
+        self.label.image = self.back_img  # fixa verso
+
+    def grid(self, row, col):
+        self.label.grid(row=row, column=col, padx=10, pady=10)
+
+def create_deck():
+    card_ids = random.sample(range(1, 53), 24)
     deck = []
-    for card_id in cards:
-        img = Image.open(f"imagens/cards/{card_id}.png")  # Abre a imagem da carta pelo ID
-        img = ImageTk.PhotoImage(img)  # Converte para imagem compatível com Tkinter
-        deck.append(img)  # Adiciona primeira cópia
-        deck.append(img)  # Adiciona segunda cópia (par)
-    random.shuffle(deck)  # Embaralha o baralho
+
+    for cid in card_ids:
+        path = f"imagens/Cards/{cid}.png"
+        img1 = Image.open(path).resize((128, 128))
+        photo1 = ImageTk.PhotoImage(img1)
+        photo2 = ImageTk.PhotoImage(img1.copy())  # cópia evita conflito interno
+
+        deck.append((photo1, cid))
+        deck.append((photo2, cid))
+
+    random.shuffle(deck)
     return deck
 
-# Função principal que inicia o tabuleiro do jogo
-def start_board(player1, player2):
-    # Cria a janela principal
+def create_board(player1, player2):
     window = ctk.CTk()
-    window.geometry("1920x1080")  # Define tamanho da janela
-    window.title("Memory Game")  # Título da janela
-    window.resizable(True, True)  # Permite redimensionamento
+    window.geometry("1920x1080")
+    window.title("Memory Game")
+    window.resizable(True, True)
 
-    # Gera os IDs das cartas e cria o baralho com imagens
-    card_ids = create_deck_id()
-    deck = create_deck_cards(card_ids)
+    # Variáveis de estado
+    after_ids = []
+    current_turn = tk.StringVar(value=f"Vez: {player1}")
+    score1 = tk.IntVar(value=0)
+    score2 = tk.IntVar(value=0)
+    player_turn = [1]
+    revealed_cards = []
 
-    # Cria o topo da interface com placar e informações
-    frame_top = ctk.CTkFrame(window, height=80)
-    frame_top.pack(fill="x")  # Ocupa largura total
+    # Cabeçalho
+    frame_top = ctk.CTkFrame(window, height=100)
+    frame_top.pack(fill="x")
+    ctk.CTkLabel(frame_top, text="Memory Game", font=("Arial", 28)).pack(pady=10)
 
-    # Variáveis de controle de pontuação e turno
-    current_turn = tk.StringVar(value=f"Vez: {player1}")  # Turno atual, inicializei com o jogador 1 para um bom fluxo de jogo
-    score1 = tk.IntVar(value=0)  # Pontuação do jogador 1, uso o tk.IntVar para atualizar automaticamente e não precisar de .get()
-    score2 = tk.IntVar(value=0)  # Pontuação do jogador 2
-    player_turn = [1]  # Lista mutável para controlar de quem é a vez (1 ou 2)
+    frame_info = ctk.CTkFrame(window, height=80)
+    frame_info.pack(fill="x", pady=(0, 10))
+    ctk.CTkLabel(frame_info, text=f"{player1} - Pontos:", font=("Arial", 23)).pack(side="left", padx=10)
+    ctk.CTkLabel(frame_info, textvariable=score1, font=("Arial", 23)).pack(side="left")
+    ctk.CTkLabel(frame_info, textvariable=current_turn, font=("Arial", 23)).pack(side="left", expand=True)
+    ctk.CTkLabel(frame_info, textvariable=score2, font=("Arial", 23)).pack(side="right", padx=10)
+    ctk.CTkLabel(frame_info, text=f"{player2} - Pontos:", font=("Arial", 23)).pack(side="right")
 
-    # Título do jogo
-    label_title = ctk.CTkLabel(frame_top, text="Memory Game", font=("Arial", 24))
-    label_title.pack(side="top", pady=5)
+    # Tabuleiro
+    frame_main = ctk.CTkFrame(window, fg_color="#363636")
+    frame_main.pack(fill="both", expand=True)
 
-    # Frame com as informações dos jogadores e turno
-    info_frame = ctk.CTkFrame(frame_top)
-    info_frame.pack(fill="x", pady=5)
+    frame_grid = tk.Frame(frame_main, bg="#363636")
+    frame_grid.place(relx=0.5, rely=0.5, anchor="center")
 
-    # Rótulos com os nomes e pontuações
-    player1_label = ctk.CTkLabel(info_frame, textvariable=tk.StringVar(value=f"{player1} - Pontos:"), font=("Arial", 18))
-    player1_score = ctk.CTkLabel(info_frame, textvariable=score1, font=("Arial", 18))
-    player2_label = ctk.CTkLabel(info_frame, textvariable=tk.StringVar(value=f"{player2} - Pontos:"), font=("Arial", 18))
-    player2_score = ctk.CTkLabel(info_frame, textvariable=score2, font=("Arial", 18))
-    turn_label = ctk.CTkLabel(info_frame, textvariable=current_turn, font=("Arial", 18))
+    # Imagem do verso da carta
+    back_img = ImageTk.PhotoImage(Image.open("imagens/Cards/back.png").resize((128, 128)))
 
-    # Posicionamento dos elementos
-    player1_label.pack(side="left", padx=10)
-    player1_score.pack(side="left")
-    player2_score.pack(side="right", padx=10)
-    player2_label.pack(side="right")
-    turn_label.pack(side="top", pady=5)
+    # Cria as cartas
+    deck_data = create_deck()
+    cards = []
 
-    # Cria um canvas com scroll para exibir as cartas
-    scroll_canvas = tk.Canvas(window, bg="#363636", height=820)
-    scrollbar = tk.Scrollbar(window, orient="vertical", command=scroll_canvas.yview)
-    scroll_canvas.configure(yscrollcommand=scrollbar.set)
+    def clear_after():
+        for aid in after_ids:
+            window.after_cancel(aid)
+        after_ids.clear()
 
-    # Posiciona o canvas e a barra de rolagem
-    scrollbar.pack(side="right", fill="y")
-    scroll_canvas.pack(side="left", fill="both", expand=True)
-
-    # Cria um frame interno para colocar os botões das cartas
-    inner_frame = ctk.CTkFrame(scroll_canvas, fg_color="#363636")
-    scroll_canvas.create_window((0, 0), window=inner_frame, anchor="nw")
-
-    # Função chamada sempre que o tamanho do frame interno mudar, por exemplo, 
-    # coloco uma carta, essa função é chamada para garantir o funcionamento do scrollbar, caso ele seja necessario
-    def on_configure(event):
-        scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
-
-    # Associa evento de redimensionamento
-    inner_frame.bind("<Configure>", on_configure)
-
-    # Imagem da parte de trás das cartas (coberta)
-    back_img = ImageTk.PhotoImage(Image.open("imagens/cards/back.png").resize((128, 128)))
-
-    revealed = []# Lista para controlar quais cartas foram reveladas
-    image_refs = []  # Referências para manter imagens em memória
-
-    # Função que verifica se duas cartas abertas são um par
-    checking = [False] #flag para gerenciar o numero de verificacoes, garantindo que apenas uma verificação ocorra por vez
     def check_match():
-        checking [0] = False #define a flag como falsa, para evitar simultaneas verificacoes.
-
-        def clear_after(): #utilizado para elimininar os callbacks que after executa, fazendo com que na reexecucao do programa, nenhum callback cause erros.
-            for after_id in after_ids:
-                scroll_canvas.after_cancel(after_id)
-            after_ids.clear()
-
-    
-        if len(revealed) == 2: # A função só deve rodar se exatamente 2 cartas estiverem viradas
-        
-            idx1, id1 = revealed[0]# Pega os índices e IDs únicos das duas cartas reveladas, idx é o índice, e id1 é o id da carta. 
-            idx2, id2 = revealed[1]#Todas as cartas possuem como nome seu id, indo de 1 a 52
-            
-            # Compara se as imagens nas duas posições do baralho são iguais
-            if deck[idx1] == deck[idx2]:
-                # Se for a vez do jogador 1, adiciona 1 ponto a ele
+        if len(revealed_cards) == 2:
+            c1, c2 = revealed_cards
+            if c1.card_id == c2.card_id:
                 if player_turn[0] == 1:
                     score1.set(score1.get() + 1)
                 else:
-                    # Se for a vez do jogador 2, adiciona 1 ponto a ele
                     score2.set(score2.get() + 1)
             else:
-                # Se as cartas forem diferentes:
-                # Aguarda 1 segundo e vira as cartas de volta (recoloca imagem de trás)
-                #  (OBS: na documentacao fornecida, o tempo sugerido é de 2s, mas para melhor dinamica, 1s foi utilizado. 
-                # caso necessite de ser 2s, apenas altere o primeiro campo de after(), mudando o 1000 para 2000)
-                after_ids.append(scroll_canvas.after(1000, lambda: card_buttons[idx1].configure(image=back_img)))
-                after_ids.append(scroll_canvas.after(1000, lambda: card_buttons[idx2].configure(image=back_img)))
-                
-                # Alterna o jogador da vez
+                after_ids.append(window.after(1000, lambda: hide_cards(c1, c2)))
                 player_turn[0] = 2 if player_turn[0] == 1 else 1
                 current_turn.set(f"Vez: {player1 if player_turn[0] == 1 else player2}")
-            
-            # Limpa a lista de cartas reveladas, independente de acerto ou erro
-            revealed.clear()
+            revealed_cards.clear()
 
-            # Verifica se todas as 24 combinações foram feitas (fim de jogo)
             if score1.get() + score2.get() == 24:
-                # Determina o vencedor e perdedor, armazenando a pontuacao de cada um, que vai ser mandada para a funcao show_result()
-                winner = player1 if score1.get() > score2.get() else player2
-                loser = player2 if score1.get() > score2.get() else player1
-                points = score1.get() if score1.get() > score2.get() else score2.get()
-                loser_points = score2.get() if score1.get() > score2.get() else score1.get()
-                # Cancela todas as chamadas pendentes do after
                 clear_after()
-                # Fecha a janela do jogo e mostra o resultado final
-                window.destroy()
-                show_result(winner, points, loser, loser_points)
+                if score1.get() == score2.get():
+                    window.destroy()
+                    swow_draw(player1, player2)
+                else:
+                    winner = player1 if score1.get() > score2.get() else player2
+                    loser = player2 if winner == player1 else player1
+                    window.destroy()
+                    show_result(winner, max(score1.get(), score2.get()), loser, min(score1.get(), score2.get()))
 
+    def hide_cards(c1, c2):
+        c1.hide()
+        c1.revealed = False
+        c2.hide()
+        c2.revealed = False
 
-    card_buttons = []  # Lista para armazenar os botões das cartas
+    def on_card_click(card):
+        if len(revealed_cards) < 2 and not card.revealed:
+            card.show()
+            card.revealed = True
+            revealed_cards.append(card)
+            if len(revealed_cards) == 2:
+                check_match()
 
-    # Cria e posiciona os 48 botões (24 pares)
-    for idx in range(48):
-        row, col = divmod(idx, 8)  # Calcula linha e coluna para grade 8x6 por meio da função divmod
-                                    #(descobri essa funcao pelo gpt, retorna tanto o valor inteiro da divisão 
-                                    # quanto o resto. O valor inteiro representa a linha em que o elemento sera posicionado, 
-                                    # e o resto a coluna.)
-        card_button = tk.Label(inner_frame, image=back_img, bg="#363636")  # Cria carta coberta
-        card_button.grid(row=row, column=col, padx=95, pady=10)  # Posiciona na grade
-        image_refs.append(deck[idx])  # Guarda referência da imagem
+    # Monta as cartas no grid
+    for i in range(48):
+        img, cid = deck_data[i]
+        card = MemoryCard(frame_grid, img, back_img, cid, on_card_click, i)
+        card.grid(row=i // 8, col=i % 8)
+        cards.append(card)
 
-        # Função que retorna a função de clique específica para cada botão
-        def make_click(i):
-            def click(event):
-                # Se menos de 2 cartas estão reveladas e a carta clicada está coberta
-                if len(revealed) < 2 and card_buttons[i]['image'] == str(back_img):
-                    card_buttons[i].configure(image=deck[i])  # Revela a carta
-                    revealed.append((i, id(card_buttons[i])))  # Salva info da carta revelada
-                    if not checking[0]:  # Só agenda se nenhuma verificação estiver pendente
-                        checking[0] = True
-                        after_ids.append(scroll_canvas.after(500, check_match))# Chama verificação após 0.5s
-                        
-            return click
-
-        card_button.bind("<Button-1>", make_click(idx))  # Associa clique à carta
-        card_buttons.append(card_button)  # Armazena o botão
-
-    # Inicia o loop da interface gráfica
     window.mainloop()
+
+# Execução
+if __name__ == "__main__":
+    create_board("Jogador 1", "Jogador 2")
