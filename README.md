@@ -13,7 +13,7 @@ Instruções de Execução:
 3. Extraia o conteúdo do arquivo JOGO_MEM.zip para uma pasta local.
 4. Navegue até o diretório do projeto no terminal.
 5. Execute o arquivo principal por meio da IDE de sua preferência. Para melhor esclarecimento, segue o vídeo:
-   link do video
+   [Tutorial de execução](https://drive.google.com/file/d/1GmyOu1hvrWvr5lAp8olS28XQwZP0rvqE/view?usp=sharing)
 6. A interface do jogo será exibida. Siga as instruções na tela para jogar.
 
 Ferramentas Utilizadas:
