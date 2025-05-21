@@ -168,7 +168,7 @@ def start_board(player1, player2):
                                     # quanto o resto. O valor inteiro representa a linha em que o elemento sera posicionado, 
                                     # e o resto a coluna.)
         card_button = tk.Label(inner_frame, image=back_img, bg="#363636")  # Cria carta coberta
-        card_button.grid(row=row, column=col, padx=10, pady=10)  # Posiciona na grade
+        card_button.grid(row=row, column=col, padx=95, pady=10)  # Posiciona na grade
         image_refs.append(deck[idx])  # Guarda referência da imagem
 
         # Função que retorna a função de clique específica para cada botão
