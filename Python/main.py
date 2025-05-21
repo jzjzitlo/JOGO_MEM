@@ -74,13 +74,15 @@ def main():
         command=window.destroy,  # Fecha a janela
         font=("Arial", 20), 
         fg_color="red",         # Cor de fundo do botão
-        hover_color="darkred"   # Cor quando o mouse passa por cima
+        hover_color="darkred",  # Cor quando o mouse passa por cima
+        width=200, 
+        height=50
     )
 
     # Posiciona o botão "Jogar" no canvas
     canvas.create_window(960, 700, window=button)
     # Posiciona o botão "Sair" no canvas
-    canvas.create_window(960, 900, window=button_exit)
+    canvas.create_window(960, 800, window=button_exit)
 
     # Inicia o loop principal da interface gráfica
     window.mainloop()
